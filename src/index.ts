@@ -36,7 +36,7 @@ export default {
 		function createHeaders() {
 			return {
 				"Access-Control-Allow-Origin": "https://xpui.app.spotify.com",
-				"Access-Control-Allow-Methods": "GET, POST",
+				"Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE",
 				"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, cors-cookie"
 			};
 		}

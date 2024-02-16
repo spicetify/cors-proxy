@@ -95,7 +95,7 @@ export default {
 		}
 
 		async function MethodNotAllowed(request: Request) {
-			return new Response(`Method ${request.method} not allowed.`, {
+			return new Response(JSON.stringify({ message: `Method ${request.method} is not allowed` }), {
 				status: 405,
 				headers: {
 					Allow: "GET, POST"
@@ -105,7 +105,7 @@ export default {
 
 		const { headers } = request;
 		if (!isValidOrigin(headers.get("origin") as string)) {
-			return new Response(JSON.stringify({ message: "Invalid origin" }), {
+			return new Response(JSON.stringify({ message: "Unsupported origin" }), {
 				status: 403
 			});
 		}

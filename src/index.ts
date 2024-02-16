@@ -98,7 +98,7 @@ export default {
 			return new Response(JSON.stringify({ message: `Method ${request.method} is not allowed` }), {
 				status: 405,
 				headers: {
-					Allow: "GET, POST"
+					Allow: "GET, POST, POST, PUT, DELETE, PATCH"
 				}
 			});
 		}
@@ -112,7 +112,7 @@ export default {
 
 		if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: createHeaders() });
 
-		if (request.method === "PUT" || request.method === "DELETE" || request.method === "PATCH") return MethodNotAllowed(request);
+		if (request.method === "HEAD") return MethodNotAllowed(request);
 
 		const cleanedHeaders = filterSupportedHeaders(Object.fromEntries(headers)) as Record<string, string>;
 

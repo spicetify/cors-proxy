@@ -85,7 +85,11 @@ export default {
 					...headers,
 					...customHeaders
 				},
-				timeout: 5000
+				timeout: 5000,
+				cf: {
+					cacheTtl: 60,
+					cacheEverything: true
+				}
 			};
 
 			// @ts-expect-error
@@ -132,7 +136,6 @@ export default {
 
 		try {
 			const response = await fetch(targetURL.toString(), requestOptions);
-			console.log(response);
 			const json = await response.json();
 
 			const responseHeaders: Record<string, string> = {};

@@ -102,7 +102,8 @@ export default {
 			return new Response(JSON.stringify({ message: `Method ${request.method} is not allowed` }), {
 				status: 405,
 				headers: {
-					Allow: "GET, POST, POST, PUT, DELETE, PATCH"
+					Allow: "GET, POST, POST, PUT, DELETE, PATCH",
+					...createHeaders()
 				}
 			});
 		}
@@ -110,7 +111,8 @@ export default {
 		const { headers } = request;
 		if (!isValidOrigin(headers.get("origin") as string)) {
 			return new Response(JSON.stringify({ message: "Unsupported origin" }), {
-				status: 403
+				status: 403,
+				headers: createHeaders()
 			});
 		}
 

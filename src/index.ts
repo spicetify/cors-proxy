@@ -122,7 +122,15 @@ export default {
 
 		const cleanedHeaders = filterSupportedHeaders(Object.fromEntries(headers)) as Record<string, string>;
 
-		const url = new URL(request.url);
+		let url: URL;
+		try {
+			url = new URL(request.url);
+		} catch {
+			return new Response(JSON.stringify({ message: "Invalid URL has been provided" }), {
+				status: 400,
+				headers: createHeaders()
+			});
+		}
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 

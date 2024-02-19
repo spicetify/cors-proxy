@@ -64,7 +64,7 @@ new Elysia()
 			return new Response(JSON.stringify({ message: e }), { status: 500 });
 		}
 	})
-	.listen(3000);
+	.listen(process.env.PORT || 3000);
 
 function isValidOrigin(origin: string | undefined) {
 	return origin === "https://xpui.app.spotify.com";

@@ -57,6 +57,15 @@ export default {
 			return new URL(finalURL);
 		}
 
+		function isJson(str: string) {
+			try {
+				JSON.parse(str);
+			} catch (e) {
+				return false;
+			}
+			return true;
+		}
+
 		function createRequestOptions(headers: Record<string, string>, method: string, body: unknown, hostname: string) {
 			// biome-ignore lint/performance/noDelete: <explanation>
 			delete headers.origin;
@@ -93,7 +102,7 @@ export default {
 			};
 
 			// @ts-expect-error
-			if (body) requestAll.body = JSON.stringify(body);
+			if (body) requestAll.body = isJson ? JSON.stringify(body) : body;
 
 			return requestAll;
 		}
@@ -142,7 +151,12 @@ export default {
 			});
 		}
 
-		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
+		const requestOptions = createRequestOptions(
+			cleanedHeaders,
+			request.method,
+			await request.json().catch(async () => await request.text()),
+			targetURL.hostname.toString()
+		);
 
 		try {
 			const response = await fetch(targetURL.toString(), requestOptions);

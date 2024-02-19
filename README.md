@@ -1,0 +1,3 @@
+# cors-proxy
+
+cors proxy because spotify removed `CosmosAsync` resolvers for external uris...

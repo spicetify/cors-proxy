@@ -45,6 +45,12 @@ new Elysia()
 			}
 			const headers = cleanHeaders(responseHeaders);
 
+			const file = Bun.file("amount.txt");
+			const text = await file.text();
+			const num = parseInt(Number.isNaN(text) ? "0" : text);
+			const next = num + 1;
+			Bun.write("amount.txt", next.toString());
+
 			return responseHelper(json, response.status, headers);
 		} catch (e) {
 			console.log(e);

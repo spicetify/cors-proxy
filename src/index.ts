@@ -5,7 +5,7 @@ export default {
 		}
 
 		function filterSupportedHeaders(headers: Record<string, string>): Record<string, string> {
-			const supportedHeaders = ["content-type", "authorization", "accept", "cors-cookie", "origin", "x-requested-with", "cors-cookie"];
+			const supportedHeaders = ["content-type", "authorization", "accept", "cors-cookie", "origin", "x-requested-with"];
 			const filteredHeaders: Record<string, string> = {};
 
 			for (const key in headers) {
@@ -108,25 +108,18 @@ export default {
 		}
 
 		async function MethodNotAllowed(request: Request) {
-			return new Response(JSON.stringify({ message: `Method ${request.method} is not allowed` }), {
-				status: 405,
-				headers: {
-					Allow: "GET, POST, POST, PUT, DELETE, PATCH",
-					...createHeaders()
-				}
-			});
+			return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, POST, PUT, DELETE, PATCH" });
+		}
+
+		function responseHelper(json: Record<string, unknown> | null, status: number, headers?: Record<string, string>) {
+			return new Response(json === null ? null : JSON.stringify(json), { status, headers: { ...headers, ...createHeaders() } });
 		}
 
 		const { headers } = request;
-		if (!isValidOrigin(headers.get("origin") as string)) {
-			return new Response(JSON.stringify({ message: "Unsupported origin" }), {
-				status: 403,
-				headers: createHeaders()
-			});
-		}
+		if (request.url.endsWith("/")) return responseHelper({ message: "Proxy is working as expected" }, 200);
+		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper({ message: "Unsupported origin" }, 403);
 
-		if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: createHeaders() });
-
+		if (request.method === "OPTIONS") return responseHelper(null, 200);
 		if (request.method === "HEAD") return MethodNotAllowed(request);
 
 		const cleanedHeaders = filterSupportedHeaders(Object.fromEntries(headers)) as Record<string, string>;
@@ -135,21 +128,13 @@ export default {
 		try {
 			url = new URL(request.url);
 		} catch {
-			return new Response(JSON.stringify({ message: "Invalid URL has been provided" }), {
-				status: 400,
-				headers: createHeaders()
-			});
+			return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		}
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
-		if (!targetURL) {
-			return new Response(JSON.stringify({ message: "Invalid URL has been provided" }), {
-				status: 400,
-				headers: createHeaders()
-			});
-		}
+		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 
 		const requestOptions = createRequestOptions(
 			cleanedHeaders,
@@ -167,19 +152,12 @@ export default {
 			for (const [key, value] of response.headers.entries()) {
 				responseHeaders[key] = value;
 			}
-
 			const headers = cleanHeaders(responseHeaders);
 
-			return new Response(JSON.stringify(json), {
-				status: response.status,
-				headers: {
-					...headers,
-					...createHeaders()
-				}
-			});
+			return responseHelper(json as Record<string, unknown>, response.status, headers);
 		} catch (e) {
 			console.log(e);
-			return new Response(JSON.stringify({ message: e }), { status: 500 });
+			return responseHelper({ message: e }, 500);
 		}
 	}
 } satisfies ExportedHandler;

@@ -1,18 +1,15 @@
 import { Elysia } from "elysia";
 
 new Elysia()
+	.get("/", () => {
+		return responseHelper({ message: "Proxy is working as expected" }, 200);
+	})
 	.all("*", async context => {
 		const { request } = context;
 		const { headers } = request;
-		if (!isValidOrigin(headers.get("origin") as string)) {
-			return new Response(JSON.stringify({ message: "Unsupported origin" }), {
-				status: 403,
-				headers: createHeaders()
-			});
-		}
+		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper({ message: "Unsupported origin" }, 403);
 
-		if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: createHeaders() });
-
+		if (request.method === "OPTIONS") return responseHelper(null, 200);
 		if (request.method === "HEAD") return MethodNotAllowed(request);
 
 		// @ts-expect-error
@@ -22,21 +19,13 @@ new Elysia()
 		try {
 			url = new URL(request.url);
 		} catch {
-			return new Response(JSON.stringify({ message: "Invalid URL has been provided" }), {
-				status: 400,
-				headers: createHeaders()
-			});
+			return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		}
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
-		if (!targetURL) {
-			return new Response(JSON.stringify({ message: "Invalid URL has been provided" }), {
-				status: 400,
-				headers: createHeaders()
-			});
-		}
+		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 
 		const requestOptions = createRequestOptions(
 			cleanedHeaders,
@@ -54,19 +43,12 @@ new Elysia()
 			for (const [key, value] of response.headers.entries()) {
 				responseHeaders[key] = value;
 			}
-
 			const headers = cleanHeaders(responseHeaders);
 
-			return new Response(JSON.stringify(json), {
-				status: response.status,
-				headers: {
-					...headers,
-					...createHeaders()
-				}
-			});
+			return responseHelper(json, response.status, headers);
 		} catch (e) {
 			console.log(e);
-			return new Response(JSON.stringify({ message: e }), { status: 500 });
+			return responseHelper({ message: e }, 500);
 		}
 	})
 	.listen(process.env.PORT || 3000);
@@ -76,7 +58,7 @@ function isValidOrigin(origin: string | undefined) {
 }
 
 function filterSupportedHeaders(headers: Record<string, string>): Record<string, string> {
-	const supportedHeaders = ["content-type", "authorization", "accept", "cors-cookie", "origin", "x-requested-with", "cors-cookie"];
+	const supportedHeaders = ["content-type", "authorization", "accept", "cors-cookie", "origin", "x-requested-with"];
 	const filteredHeaders: Record<string, string> = {};
 
 	for (const key in headers) {
@@ -170,13 +152,7 @@ function createRequestOptions(headers: Record<string, string>, method: string, b
 }
 
 async function MethodNotAllowed(request: Request) {
-	return new Response(JSON.stringify({ message: `Method ${request.method} is not allowed` }), {
-		status: 405,
-		headers: {
-			Allow: "GET, POST, POST, PUT, DELETE, PATCH",
-			...createHeaders()
-		}
-	});
+	return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, POST, PUT, DELETE, PATCH" });
 }
 
 function isJson(str: string) {
@@ -186,4 +162,8 @@ function isJson(str: string) {
 		return false;
 	}
 	return true;
+}
+
+function responseHelper(json: Record<string, unknown> | null, status: number, headers?: Record<string, string>) {
+	return new Response(json === null ? null : JSON.stringify(json), { status, headers: { ...headers, ...createHeaders() } });
 }

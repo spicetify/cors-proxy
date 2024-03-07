@@ -2,12 +2,12 @@ import { Elysia } from "elysia";
 
 new Elysia()
 	.get("/", () => {
-		return responseHelper({ message: "Proxy is working as expected" }, 200);
+		return responseHelper(JSON.stringify({ message: "Proxy is working as expected" }), 200);
 	})
 	.all("*", async context => {
 		const { request } = context;
 		const { headers } = request;
-		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper({ message: "Unsupported origin" }, 403);
+		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper(JSON.stringify({ message: "Unsupported origin" }), 403);
 
 		if (request.method === "OPTIONS") return responseHelper(null, 200);
 		if (request.method === "HEAD") return MethodNotAllowed(request);
@@ -18,17 +18,18 @@ new Elysia()
 		try {
 			url = new URL(request.url);
 		} catch {
-			return responseHelper({ message: "Invalid URL has been provided" }, 400);
+			return responseHelper(JSON.stringify({ message: "Invalid URL has been provided" }), 400);
 		}
 
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
-		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
-		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
+		if (!targetURL) return responseHelper(JSON.stringify({ message: "Invalid URL has been provided" }), 400);
+		if (targetURL.hostname.toString() === "genius.com")
+			return responseHelper(JSON.stringify({ message: "Genius has been disabled from the cors-proxy." }), 403);
 		if (targetURL.hostname.toString() === "localhost" || targetURL.hostname.toString() === "127.0.0.1" || targetURL.hostname.toString() === "[::1]")
-			return responseHelper({ message: "localhost URLs cannot be fetched" }, 403);
+			return responseHelper(JSON.stringify({ message: "localhost URLs cannot be fetched" }), 403);
 
 		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
 
@@ -50,7 +51,7 @@ new Elysia()
 			return responseHelper(response.body, response.status, headers);
 		} catch (e) {
 			console.log(e);
-			return responseHelper({ message: e }, 500);
+			return responseHelper(JSON.stringify({ message: e }), 500);
 		}
 	})
 	.listen(process.env.PORT || 3000);
@@ -149,9 +150,10 @@ function createRequestOptions(headers: Record<string, string>, method: string, b
 }
 
 async function MethodNotAllowed(request: Request) {
-	return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
+	return responseHelper(JSON.stringify({ message: `Method ${request.method} is not allowed` }), 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
 }
 
 function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
+	// @ts-expect-error
 	return new Response(res, { status, headers: { ...headers, ...createHeaders() } });
 }

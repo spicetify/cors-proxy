@@ -28,12 +28,11 @@ new Elysia()
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
 
-		const requestOptions = createRequestOptions(cleanedHeaders, request.method, await parseBody(request), targetURL.hostname.toString());
+		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
 
 		try {
+			// @ts-expect-error
 			const response = await fetch(targetURL.toString(), requestOptions);
-			const resBody = await parseBody(response);
-
 			const responseHeaders: Record<string, string> = {};
 			for (const [key, value] of response.headers.entries()) {
 				responseHeaders[key] = value;
@@ -46,7 +45,7 @@ new Elysia()
 			const next = num + 1;
 			Bun.write("amount.txt", next.toString());
 
-			return responseHelper(resBody, response.status, headers);
+			return responseHelper(response.body, response.status, headers);
 		} catch (e) {
 			console.log(e);
 			return responseHelper({ message: e }, 500);
@@ -133,24 +132,18 @@ function createRequestOptions(headers: Record<string, string>, method: string, b
 		else customHeaders.cookie = "x-mxm-token-guid=";
 	}
 
-	const requestAll = {
+	const requestOptions: { method: string; headers: Record<string, string>; timeout: number; body?: unknown } = {
 		method: method,
 		headers: {
 			...headers,
 			...customHeaders
 		},
-		timeout: 5000,
-		cf: {
-			cacheTtl: 60,
-			cacheEverything: true
-		}
+		timeout: 5000
 	};
 
-	const requestBody = typeof body !== "undefined" ? (typeof body === "object" ? JSON.stringify(body) : body) : null;
-	// @ts-expect-error
-	if (body) requestAll.body = requestBody;
+	if (body) requestOptions.body = body;
 
-	return requestAll;
+	return requestOptions;
 }
 
 async function MethodNotAllowed(request: Request) {
@@ -158,21 +151,5 @@ async function MethodNotAllowed(request: Request) {
 }
 
 function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
-	const responseBody = typeof res !== "undefined" ? (typeof res === "object" ? JSON.stringify(res) : res) : null;
-	// @ts-expect-error
-	return new Response(responseBody, { status, headers: { ...headers, ...createHeaders() } });
-}
-
-async function parseBody(request: Response | Request) {
-	if (request instanceof Request && request.method === "GET") return undefined;
-
-	try {
-		return await request.clone().json();
-	} catch {
-		try {
-			return await request.clone().blob();
-		} catch {
-			return await request.clone().text();
-		}
-	}
+	return new Response(res, { status, headers: { ...headers, ...createHeaders() } });
 }

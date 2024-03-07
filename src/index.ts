@@ -27,6 +27,8 @@ new Elysia()
 		const targetURL = createTargetURL(path, query as Record<string, string>);
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
+		if (targetURL.hostname.toString() === "localhost" || targetURL.hostname.toString() === "127.0.0.1" || targetURL.hostname.toString() === "[::1]")
+			return responseHelper({ message: "localhost URLs cannot be fetched" }, 403);
 
 		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
 

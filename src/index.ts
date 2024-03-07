@@ -60,9 +60,10 @@ export default {
 		function isJson(str: string) {
 			try {
 				JSON.parse(str);
-			} catch (e) {
+			} catch {
 				return false;
 			}
+
 			return true;
 		}
 
@@ -101,8 +102,9 @@ export default {
 				}
 			};
 
+			const requestBody = typeof body !== "undefined" ? (isJson(body as string) ? JSON.stringify(body) : body) : null;
 			// @ts-expect-error
-			if (body) requestAll.body = isJson ? JSON.stringify(body) : body;
+			if (body) requestAll.body = requestBody;
 
 			return requestAll;
 		}
@@ -111,8 +113,25 @@ export default {
 			return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, POST, PUT, DELETE, PATCH" });
 		}
 
-		function responseHelper(json: Record<string, unknown> | null, status: number, headers?: Record<string, string>) {
-			return new Response(json === null ? null : JSON.stringify(json), { status, headers: { ...headers, ...createHeaders() } });
+		function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
+			const responseBody = typeof res !== "undefined" ? (isJson(res as string) ? JSON.stringify(res) : res) : null;
+			// @ts-expect-error
+			return new Response(responseBody, { status, headers: { ...headers, ...createHeaders() } });
+		}
+
+		async function parseBody(request: Response | Request) {
+			if (request instanceof Request && request.method === "GET") return undefined;
+			const res = await request.clone();
+
+			try {
+				return await res.json();
+			} catch {
+				try {
+					return await res.blob();
+				} catch {
+					return await res.text();
+				}
+			}
 		}
 
 		const { headers } = request;
@@ -136,16 +155,11 @@ export default {
 		const targetURL = createTargetURL(path, query as Record<string, string>);
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 
-		const requestOptions = createRequestOptions(
-			cleanedHeaders,
-			request.method,
-			await request.json().catch(async () => await request.text()),
-			targetURL.hostname.toString()
-		);
+		const requestOptions = createRequestOptions(cleanedHeaders, request.method, await parseBody(request), targetURL.hostname.toString());
 
 		try {
 			const response = await fetch(targetURL.toString(), requestOptions);
-			const json = await response.json();
+			const resBody = await parseBody(response);
 
 			const responseHeaders: Record<string, string> = {};
 			// @ts-ignore
@@ -154,7 +168,7 @@ export default {
 			}
 			const headers = cleanHeaders(responseHeaders);
 
-			return responseHelper(json as Record<string, unknown>, response.status, headers);
+			return responseHelper(resBody, response.status, headers);
 		} catch (e) {
 			console.log(e);
 			return responseHelper({ message: e }, 500);

@@ -12,7 +12,6 @@ new Elysia()
 		if (request.method === "OPTIONS") return responseHelper(null, 200);
 		if (request.method === "HEAD") return MethodNotAllowed(request);
 
-		// @ts-expect-error
 		const cleanedHeaders = filterSupportedHeaders(Object.fromEntries(headers)) as Record<string, string>;
 
 		let url: URL;
@@ -21,25 +20,20 @@ new Elysia()
 		} catch {
 			return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		}
+
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 
-		const requestOptions = createRequestOptions(
-			cleanedHeaders,
-			request.method,
-			await request.json().catch(async () => await request.text()),
-			targetURL.hostname.toString()
-		);
+		const requestOptions = createRequestOptions(cleanedHeaders, request.method, await parseBody(request), targetURL.hostname.toString());
 
 		try {
 			const response = await fetch(targetURL.toString(), requestOptions);
-			const json = await response.json();
+			const resBody = await parseBody(response);
 
 			const responseHeaders: Record<string, string> = {};
-			// @ts-ignore
 			for (const [key, value] of response.headers.entries()) {
 				responseHeaders[key] = value;
 			}
@@ -51,7 +45,7 @@ new Elysia()
 			const next = num + 1;
 			Bun.write("amount.txt", next.toString());
 
-			return responseHelper(json, response.status, headers);
+			return responseHelper(resBody, response.status, headers);
 		} catch (e) {
 			console.log(e);
 			return responseHelper({ message: e }, 500);
@@ -151,25 +145,44 @@ function createRequestOptions(headers: Record<string, string>, method: string, b
 		}
 	};
 
+	const requestBody = typeof body !== "undefined" ? (isJson(body as string) ? JSON.stringify(body) : body) : null;
 	// @ts-expect-error
-	if (body) requestAll.body = isJson ? JSON.stringify(body) : body;
+	if (body) requestAll.body = requestBody;
 
 	return requestAll;
 }
 
 async function MethodNotAllowed(request: Request) {
-	return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, POST, PUT, DELETE, PATCH" });
+	return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
 }
 
 function isJson(str: string) {
 	try {
 		JSON.parse(str);
-	} catch (e) {
+	} catch {
 		return false;
 	}
+
 	return true;
 }
 
-function responseHelper(json: Record<string, unknown> | null, status: number, headers?: Record<string, string>) {
-	return new Response(json === null ? null : JSON.stringify(json), { status, headers: { ...headers, ...createHeaders() } });
+function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
+	const responseBody = typeof res !== "undefined" ? (isJson(res as string) ? JSON.stringify(res) : res) : null;
+	// @ts-expect-error
+	return new Response(responseBody, { status, headers: { ...headers, ...createHeaders() } });
+}
+
+async function parseBody(request: Response | Request) {
+	if (request instanceof Request && request.method === "GET") return undefined;
+	const res = await request.clone();
+
+	try {
+		return await res.json();
+	} catch {
+		try {
+			return await res.blob();
+		} catch {
+			return await res.text();
+		}
+	}
 }

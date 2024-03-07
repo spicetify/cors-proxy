@@ -98,7 +98,7 @@ export default {
 		}
 
 		async function MethodNotAllowed(request: Request) {
-			return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
+			return responseHelper(JSON.stringify({ message: `Method ${request.method} is not allowed` }), 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
 		}
 
 		function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
@@ -107,8 +107,8 @@ export default {
 		}
 
 		const { headers } = request;
-		if (request.url.endsWith("/")) return responseHelper({ message: "Proxy is working as expected" }, 200);
-		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper({ message: "Unsupported origin" }, 403);
+		if (request.url.endsWith("/")) return responseHelper(JSON.stringify({ message: "Proxy is working as expected" }), 200);
+		if (!isValidOrigin(headers.get("origin") as string)) return responseHelper(JSON.stringify({ message: "Unsupported origin" }), 403);
 
 		if (request.method === "OPTIONS") return responseHelper(null, 200);
 		if (request.method === "HEAD") return MethodNotAllowed(request);
@@ -119,14 +119,15 @@ export default {
 		try {
 			url = new URL(request.url);
 		} catch {
-			return responseHelper({ message: "Invalid URL has been provided" }, 400);
+			return responseHelper(JSON.stringify({ message: "Invalid URL has been provided" }), 400);
 		}
 		const { pathname: path, searchParams: params } = url;
 		const query = Object.fromEntries(params.entries());
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
-		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
-		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
+		if (!targetURL) return responseHelper(JSON.stringify({ message: "Invalid URL has been provided" }), 400);
+		if (targetURL.hostname.toString() === "genius.com")
+			return responseHelper(JSON.stringify({ message: "Genius has been disabled from the cors-proxy." }), 403);
 
 		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
 
@@ -144,7 +145,7 @@ export default {
 			return responseHelper(response.body, response.status, headers);
 		} catch (e) {
 			console.log(e);
-			return responseHelper({ message: e }, 500);
+			return responseHelper(JSON.stringify({ message: e }), 500);
 		}
 	}
 } satisfies ExportedHandler;

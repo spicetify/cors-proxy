@@ -79,7 +79,7 @@ export default {
 				else customHeaders.cookie = "x-mxm-token-guid=";
 			}
 
-			const requestAll = {
+			const requestOptions: { method: string; headers: Record<string, string>; timeout: number; cf: Record<string, unknown>; body?: unknown } = {
 				method: method,
 				headers: {
 					...headers,
@@ -92,35 +92,18 @@ export default {
 				}
 			};
 
-			const requestBody = typeof body !== "undefined" ? (typeof body === "object" ? JSON.stringify(body) : body) : null;
-			// @ts-expect-error
-			if (body) requestAll.body = requestBody;
+			if (body) requestOptions.body = body;
 
-			return requestAll;
+			return requestOptions;
 		}
 
 		async function MethodNotAllowed(request: Request) {
-			return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, POST, PUT, DELETE, PATCH" });
+			return responseHelper({ message: `Method ${request.method} is not allowed` }, 405, { Allow: "GET, POST, PUT, DELETE, PATCH" });
 		}
 
 		function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
-			const responseBody = typeof res !== "undefined" ? (typeof res === "object" ? JSON.stringify(res) : res) : null;
 			// @ts-expect-error
-			return new Response(responseBody, { status, headers: { ...headers, ...createHeaders() } });
-		}
-
-		async function parseBody(request: Response | Request) {
-			if (request instanceof Request && request.method === "GET") return undefined;
-
-			try {
-				return await request.clone().json();
-			} catch {
-				try {
-					return await request.clone().blob();
-				} catch {
-					return await request.clone().text();
-				}
-			}
+			return new Response(res, { status, headers: { ...headers, ...createHeaders() } });
 		}
 
 		const { headers } = request;
@@ -145,11 +128,11 @@ export default {
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
 		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
 
-		const requestOptions = createRequestOptions(cleanedHeaders, request.method, await parseBody(request), targetURL.hostname.toString());
+		const requestOptions = createRequestOptions(cleanedHeaders, request.method, request.body, targetURL.hostname.toString());
 
 		try {
+			// @ts-expect-error
 			const response = await fetch(targetURL.toString(), requestOptions);
-			const resBody = await parseBody(response);
 
 			const responseHeaders: Record<string, string> = {};
 			// @ts-ignore
@@ -158,7 +141,7 @@ export default {
 			}
 			const headers = cleanHeaders(responseHeaders);
 
-			return responseHelper(resBody, response.status, headers);
+			return responseHelper(response.body, response.status, headers);
 		} catch (e) {
 			console.log(e);
 			return responseHelper({ message: e }, 500);

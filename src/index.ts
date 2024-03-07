@@ -57,16 +57,6 @@ export default {
 			return new URL(finalURL);
 		}
 
-		function isJson(str: string) {
-			try {
-				JSON.parse(str);
-			} catch {
-				return false;
-			}
-
-			return true;
-		}
-
 		function createRequestOptions(headers: Record<string, string>, method: string, body: unknown, hostname: string) {
 			// biome-ignore lint/performance/noDelete: <explanation>
 			delete headers.origin;
@@ -102,7 +92,7 @@ export default {
 				}
 			};
 
-			const requestBody = typeof body !== "undefined" ? (isJson(body as string) ? JSON.stringify(body) : body) : null;
+			const requestBody = typeof body !== "undefined" ? (typeof body === "object" ? JSON.stringify(body) : body) : null;
 			// @ts-expect-error
 			if (body) requestAll.body = requestBody;
 
@@ -114,22 +104,21 @@ export default {
 		}
 
 		function responseHelper(res: unknown, status: number, headers?: Record<string, string>) {
-			const responseBody = typeof res !== "undefined" ? (isJson(res as string) ? JSON.stringify(res) : res) : null;
+			const responseBody = typeof res !== "undefined" ? (typeof res === "object" ? JSON.stringify(res) : res) : null;
 			// @ts-expect-error
 			return new Response(responseBody, { status, headers: { ...headers, ...createHeaders() } });
 		}
 
 		async function parseBody(request: Response | Request) {
 			if (request instanceof Request && request.method === "GET") return undefined;
-			const res = await request.clone();
 
 			try {
-				return await res.json();
+				return await request.clone().json();
 			} catch {
 				try {
-					return await res.blob();
+					return await request.clone().blob();
 				} catch {
-					return await res.text();
+					return await request.clone().text();
 				}
 			}
 		}
@@ -154,6 +143,7 @@ export default {
 
 		const targetURL = createTargetURL(path, query as Record<string, string>);
 		if (!targetURL) return responseHelper({ message: "Invalid URL has been provided" }, 400);
+		if (targetURL.hostname.toString() === "genius.com") return responseHelper({ message: "Genius has been disabled from the cors-proxy." }, 403);
 
 		const requestOptions = createRequestOptions(cleanedHeaders, request.method, await parseBody(request), targetURL.hostname.toString());
 

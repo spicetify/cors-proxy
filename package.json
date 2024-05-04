@@ -1,0 +1,27 @@
+{
+	"name": "simple-proxy",
+	"private": true,
+	"version": "2.1.4",
+	"scripts": {
+		"prepare": "nitropack prepare",
+		"dev": "nitropack dev",
+		"build": "nitropack build",
+		"build:cloudflare": "NITRO_PRESET=cloudflare npm run build",
+		"build:node": "NITRO_PRESET=node-server npm run build",
+		"start": "node .output/server/index.mjs",
+		"preinstall": "npx only-allow pnpm"
+	},
+	"dependencies": {
+		"fetch-cookie": "^3.0.1",
+		"h3": "^1.10.0",
+		"nitropack": "^2.8.1"
+	},
+	"devDependencies": {
+		"@rollup/wasm-node": "^4.9.4"
+	},
+	"pnpm": {
+		"overrides": {
+			"rollup": "npm:@rollup/wasm-node"
+		}
+	}
+}

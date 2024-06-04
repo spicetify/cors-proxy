@@ -1,7 +1,7 @@
 {
 	"name": "simple-proxy",
 	"private": true,
-	"version": "2.1.4",
+	"version": "2.2.0",
 	"scripts": {
 		"prepare": "nitropack prepare",
 		"dev": "nitropack dev",
@@ -12,6 +12,9 @@
 		"preinstall": "npx only-allow pnpm"
 	},
 	"dependencies": {
+		"@elysiajs/cors": "^1.0.2",
+		"elysia": "^1.0.16",
+		"eventemitter3": "^5.0.1",
 		"fetch-cookie": "^3.0.1",
 		"h3": "^1.10.0",
 		"nitropack": "^2.8.1"

@@ -24,7 +24,15 @@ export default defineEventHandler(async event => {
 		});
 	}
 
-	if (checkBlacklistedTarget(destination) || !isValidURL(destination)) {
+	if (
+		checkBlacklistedTarget(destination) ||
+		!isValidURL(destination) ||
+		isCorsOriginAllowed(event.headers.get("origin") ?? undefined, {
+			origin: (origin: string) => {
+				return origin !== "https://xpui.app.spotify.com";
+			}
+		})
+	) {
 		return await sendJson({
 			event,
 			status: 400,

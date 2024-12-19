@@ -3,7 +3,7 @@ const headerMap: Record<string, string> = {
 	"X-Referer": "Referer",
 	"X-Origin": "Origin",
 	"X-User-Agent": "User-Agent",
-	"X-X-Real-Ip": "X-Real-Ip"
+	"X-X-Real-Ip": "X-Real-Ip",
 };
 
 const blacklistedHeaders = [
@@ -21,7 +21,7 @@ const blacklistedHeaders = [
 	"forwarded",
 	"x-real-ip",
 	"content-length",
-	...Object.keys(headerMap)
+	...Object.keys(headerMap),
 ];
 
 function copyHeader(headers: Headers, outputHeaders: Headers, inputKey: string, outputKey: string) {
@@ -50,7 +50,7 @@ export function getAfterResponseHeaders(headers: Headers, finalUrl: string): Rec
 		"Access-Control-Allow-Origin": "*",
 		"Access-Control-Expose-Headers": "*",
 		Vary: "Origin",
-		"X-Final-Destination": finalUrl
+		"X-Final-Destination": finalUrl,
 	};
 }
 

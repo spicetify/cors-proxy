@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
 	"organizeImports": {
 		"enabled": true
 	},
@@ -24,11 +24,5 @@
 			"trailingCommas": "all",
 			"arrowParentheses": "asNeeded"
 		}
-	},
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true,
-		"defaultBranch": "master"
 	}
 }

@@ -3,10 +3,10 @@ export function checkBlacklistedTarget(target: string) {
 }
 
 export function isValidURL(target: string) {
-  try {
-    new URL(target);
-    return true;
-  } catch {
-    return false;
-  }
- }
+	try {
+		new URL(target);
+		return true;
+	} catch {
+		return false;
+	}
+}

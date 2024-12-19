@@ -1,6 +1,6 @@
 import { getBodyBuffer } from "@/utils/body";
-import { getProxyHeaders, getAfterResponseHeaders, getBlacklistedHeaders } from "@/utils/headers";
-import { isValidURL } from "@/utils/request";
+import { getAfterResponseHeaders, getBlacklistedHeaders, getProxyHeaders } from "@/utils/headers";
+import type { EventHandlerRequest, H3Event } from "h3";
 
 export default defineEventHandler(async event => {
 	// handle cors, if applicable
@@ -9,7 +9,7 @@ export default defineEventHandler(async event => {
 			origin: (origin: string) => {
 				return origin === "https://xpui.app.spotify.com";
 			},
-			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 		});
 
 	// parse destination URL
@@ -19,8 +19,8 @@ export default defineEventHandler(async event => {
 			event,
 			status: 200,
 			data: {
-				message: `Proxy is working as expected (v${useRuntimeConfig(event).version})`
-			}
+				message: `Proxy is working as expected (v${useRuntimeConfig(event).version})`,
+			},
 		});
 	}
 
@@ -30,15 +30,15 @@ export default defineEventHandler(async event => {
 		isCorsOriginAllowed(event.headers.get("origin") ?? undefined, {
 			origin: (origin: string) => {
 				return origin !== "https://xpui.app.spotify.com";
-			}
+			},
 		})
 	) {
 		return await sendJson({
 			event,
 			status: 400,
 			data: {
-				error: "Invalid target"
-			}
+				error: "Invalid target",
+			},
 		});
 	}
 
@@ -47,17 +47,18 @@ export default defineEventHandler(async event => {
 
 	// proxy
 	try {
+		console.log(destination, event);
 		await specificProxyRequest(event, destination, {
 			blacklistedHeaders: getBlacklistedHeaders(),
 			fetchOptions: {
 				redirect: "follow",
 				headers: getProxyHeaders(event.headers),
-				body
+				body,
 			},
-			onResponse(outputEvent, response) {
+			onResponse(outputEvent: H3Event<EventHandlerRequest>, response: { headers: Headers; url: string }) {
 				const headers = getAfterResponseHeaders(response.headers, response.url);
 				setResponseHeaders(outputEvent, headers);
-			}
+			},
 		});
 	} catch (e) {
 		console.log("Error fetching", e);

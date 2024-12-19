@@ -1,7 +1,7 @@
 {
 	"name": "simple-proxy",
 	"private": true,
-	"version": "2.2.0",
+	"version": "2.3.0",
 	"scripts": {
 		"prepare": "nitropack prepare",
 		"dev": "nitropack dev",
@@ -12,16 +12,18 @@
 		"preinstall": "npx only-allow pnpm"
 	},
 	"dependencies": {
-		"fetch-cookie": "^3.0.1",
-		"h3": "^1.10.0",
-		"nitropack": "^2.8.1"
+		"fetch-cookie": "3.0.1",
+		"h3": "1.13.0",
+		"nitropack": "2.10.4",
+		"unenv": "1.10.0"
 	},
 	"devDependencies": {
-		"@rollup/wasm-node": "^4.9.4"
+		"@rollup/wasm-node": "^4.28.1"
 	},
 	"pnpm": {
 		"overrides": {
-			"rollup": "npm:@rollup/wasm-node"
+			"rollup": "npm:@rollup/wasm-node",
+			"tough-cookie": "npm:tough-cookie@5.0.0"
 		}
 	}
 }

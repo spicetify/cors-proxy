@@ -1,4 +1,4 @@
-import type { H3Event, EventHandlerRequest } from "h3";
+import type { EventHandlerRequest, H3Event } from "h3";
 
 export async function sendJson(ops: {
 	event: H3Event<EventHandlerRequest>;

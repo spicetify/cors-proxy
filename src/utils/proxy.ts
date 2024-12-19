@@ -1,5 +1,5 @@
-import { type H3Event, type Duplex, type ProxyOptions, getProxyRequestHeaders, type RequestHeaders } from "h3";
 import makeFetchCookie from "fetch-cookie";
+import { type Duplex, type H3Event, type ProxyOptions, type RequestHeaders, getProxyRequestHeaders } from "h3";
 
 const PayloadMethods = new Set(["PATCH", "POST", "PUT", "DELETE"]);
 
@@ -31,7 +31,11 @@ function mergeHeaders(defaults: HeadersInit, ...inputs: (HeadersInit | RequestHe
 	return merged;
 }
 
-export async function specificProxyRequest(event: H3Event, target: string, opts: ProxyOptions & ExtraProxyOptions = {}) {
+export async function specificProxyRequest(
+	event: H3Event,
+	target: string,
+	opts: ProxyOptions & ExtraProxyOptions = {},
+) {
 	let body: BodyInit | undefined;
 	let duplex: Duplex | undefined;
 	if (PayloadMethods.has(event.method)) {
@@ -64,10 +68,11 @@ export async function specificProxyRequest(event: H3Event, target: string, opts:
 			method,
 			url: target,
 			query,
-			headers: headerObj
+			headers: headerObj,
 		});
 	}
 
+	const isCredentialsSupported = "credentials" in Request.prototype;
 	return sendProxy(event, `${target}${query && `?${query}`}`, {
 		...opts,
 		fetch: makeFetchCookie(fetch, new makeFetchCookie.toughCookie.CookieJar()),
@@ -77,7 +82,7 @@ export async function specificProxyRequest(event: H3Event, target: string, opts:
 			duplex,
 			...opts.fetchOptions,
 			headers: fetchHeaders,
-			credentials: "include"
-		}
+			credentials: isCredentialsSupported ? "include" : undefined,
+		},
 	});
 }

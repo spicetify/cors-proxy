@@ -47,7 +47,6 @@ export default defineEventHandler(async event => {
 
 	// proxy
 	try {
-		console.log(destination, event);
 		await specificProxyRequest(event, destination, {
 			blacklistedHeaders: getBlacklistedHeaders(),
 			fetchOptions: {

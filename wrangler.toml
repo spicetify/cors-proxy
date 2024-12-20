@@ -3,7 +3,7 @@ main = "./.output/server/index.mjs"
 workers_dev = true
 compatibility_date = "2024-12-19"
 
-routes = [{ pattern = "proxy.spicetify.app", custom_domain = true }]
+routes = [{ pattern = "cors-proxy.spicetify.app", custom_domain = true }]
 
 [observability.logs]
-enabled = true
+enabled = false
